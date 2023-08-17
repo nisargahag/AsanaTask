@@ -8,6 +8,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.crypto.Mac;
@@ -35,7 +36,8 @@ public class AirtableService {
 	private final String airtableApiKey = "patJqymxNF3zA4s82.c486c5a3821a4829fe134215fe78b79ede2bcfb5224cc4f090fb2bc376706ded";
 	private final String airtableBaseUrl = "https://api.airtable.com/1.0/{baseID}/{tbldtBTl09MCHLsuk}";
 
-	public boolean createRecord(String taskId, String name, String assignee, LocalDate dueDate, String description) {
+	public boolean createRecord(String taskId, String name, String assignee, String type, LocalDate dueDate,
+			String description) {
 		try {
 
 			URI uri = UriComponentsBuilder.fromUriString(airtableBaseUrl)
@@ -75,29 +77,31 @@ public class AirtableService {
 			ObjectMapper objectMapper = new ObjectMapper();
 			AsanaWebhookEvent event = objectMapper.readValue(payload, AsanaWebhookEvent.class);
 
-			if ("task.created".equals(event.getType())) {
-				String taskId = event.getTaskId();
-				String taskName = event.getName();
-				String assignee = event.getAssignee();
-				LocalDate dueDate = event.getDueDate();
-				String description = event.getDescription();
+	
+				if ("task.created".equals(event.getType())) {
+					String type = event.getType();
+					String taskId = event.getTaskId();
+					String taskName = event.getName();
+					String assignee = event.getAssignee();
+					LocalDate dueDate = event.getDueDate();
+					String description = event.getDescription();
 
-				// Create the record in Airtable using the data from the event
-				boolean success = createRecord(taskId, taskName, assignee, dueDate, description);
+					boolean success = createRecord(type, taskId, taskName, assignee, dueDate, description);
 
-				if (success) {
-					System.out.println("Record created in Airtable: Task ID " + taskId);
-				} else {
-					System.out.println("Failed to create record in Airtable: Task ID " + taskId);
+					if (success) {
+						System.out.println("Record created in Airtable: Task ID " + taskId);
+					} else {
+						System.out.println("Failed to create record in Airtable: Task ID " + taskId);
+					}
 				}
-			}
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 	}
 
-	public ResponseEntity<String> handleWebhook(String requestBody, String hookSecret, String hookSignature) {
+	public ResponseEntity<String> handleAsanaWebhook(String requestBody, String hookSecret, String hookSignature) {
 		if (hookSecret != null) {
 			System.out.println("This is a new webhook");
 			AsanaController.secret = hookSecret;
@@ -107,15 +111,12 @@ public class AirtableService {
 				String computedSignature = computeSignature(requestBody);
 
 				if (!constantTimeComparison(hookSignature, computedSignature)) {
-					// Fail
+
 					return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 				} else {
-					// Success
+
 					System.out.println("Events on " + new java.util.Date() + ":");
 					System.out.println(requestBody);
-
-					// Process the request using business logic in the service class
-					// Example: processWebhookEvents(requestBody);
 
 					return ResponseEntity.status(HttpStatus.OK).build();
 				}
@@ -152,4 +153,5 @@ public class AirtableService {
 		}
 		return result == 0;
 	}
+
 }
