@@ -30,7 +30,7 @@ public class AsanaController {
 		if (request.getHeader("x-hook-secret") != null) {
 			secret = request.getHeader("x-hook-secret");
 			response.setHeader("x-hook-secret", secret);
-			response.setStatus(200);
+			response.setStatus(200); 
 			System.out.println(secret);
 			System.out.println(payload);
 			return ResponseEntity.status(HttpStatus.OK).body(secret);
